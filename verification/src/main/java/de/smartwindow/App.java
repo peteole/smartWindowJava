@@ -14,10 +14,17 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Base64;
-import com.machinezoo.*;
+
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
 import com.machinezoo.sourceafis.FingerprintImage;
+import com.machinezoo.sourceafis.FingerprintImageOptions;
 import com.machinezoo.sourceafis.FingerprintMatcher;
 import com.machinezoo.sourceafis.FingerprintTemplate;
+import com.machinezoo.sourceafis.FingerprintTransparency;
+
+import java.nio.file.Files;
 
 /**
  * Hello world!
@@ -25,7 +32,13 @@ import com.machinezoo.sourceafis.FingerprintTemplate;
  */
 public class App {
     public static void main(String[] args) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getByName("0.0.0.0"),8080), 0);
+        ImageImprovement.init();
+        // byte[] bytes = Files.readAllBytes(new File("/tmp/exampleProcessed.png").toPath());
+        // FingerprintImage image = new FingerprintImage(bytes, new FingerprintImageOptions().dpi(400));
+        // FingerprintTemplate template = new FingerprintTemplate(image);
+
+        InetAddress addr = InetAddress.getByAddress(new byte[] { 0, 0, 0, 0 });
+        HttpServer server = HttpServer.create(new InetSocketAddress(addr, 8080), 0);
         server.createContext("/upload", new MyHandler());
         server.setExecutor(null); // creates a default executor
         server.start();
@@ -41,14 +54,15 @@ public class App {
             InputStream body = t.getRequestBody();
             String base64 = IOUtils.toString(body, "UTF-8");
             byte[] decoded = Base64.getDecoder().decode(base64.split(",")[1]);
-            File file = new File("/tmp/test.png");
+            decoded = ImageImprovement.processImage(decoded);
+            File file = new File("/tmp/testimproved.png");
             try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file))) {
                 outputStream.write(decoded);
             } catch (IOException e) {
                 e.printStackTrace();
             }
             try {
-                FingerprintImage image = new FingerprintImage(decoded);
+                FingerprintImage image = new FingerprintImage(decoded, new FingerprintImageOptions().dpi(400));
                 FingerprintTemplate template = new FingerprintTemplate(image);
                 if (last == null) {
                     response = "Added template";
@@ -69,4 +83,9 @@ public class App {
         }
     }
 
+    public static SSLSocket createSocket(String host, int port) throws IOException {
+        SSLSocket socket = (SSLSocket) SSLSocketFactory.getDefault()
+                .createSocket(host, port);
+        return socket;
+    }
 }

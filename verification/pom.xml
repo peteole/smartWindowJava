@@ -35,6 +35,12 @@
     <artifactId>sourceafis</artifactId>
     <version>3.13.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.openpnp</groupId>
+      <artifactId>opencv</artifactId>
+      <version>[4.3.0,)</version>
+    </dependency>
+
   </dependencies>
 
   <build>
